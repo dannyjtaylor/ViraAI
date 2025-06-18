@@ -1,0 +1,156 @@
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background-color: #f2f2f2;
+    color: #000;
+    margin: 0;
+    padding: 0;
+    transition: background 0.3s, color 0.3s;
+}
+
+header {
+    background-color: #007B7F;
+    color: white;
+    display: flex;
+    align-items: center;
+    padding: 10px 20px;
+    position: relative;
+}
+
+.logo {
+    height: 40px;
+    margin-right: 15px;
+}
+
+#theme-toggle {
+    position: absolute;
+    right: 20px;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+main {
+    padding: 20px;
+    padding-bottom: 100px; /* NEW */
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+
+.message {
+    margin: 10px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.message.user {
+    align-items: flex-end;
+}
+
+.message.vira {
+    align-items: flex-start;
+}
+
+.bubble {
+    max-width: 60%;
+    padding: 10px 15px;
+    border-radius: 20px;
+    position: relative;
+    word-wrap: break-word;
+    line-height: 1.5;
+}
+
+.message.user .bubble {
+    background-color: #b2dfdb;
+    color: black;
+    border-bottom-right-radius: 0;
+}
+
+.message.vira .bubble {
+    background-color: #e0f7fa;
+    color: black;
+    border-bottom-left-radius: 0;
+}
+
+.timestamp {
+    font-size: 0.7rem;
+    color: gray;
+    margin-top: 2px;
+    padding-left: 10px;
+}
+
+footer {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    display: flex;
+    padding: 10px 20px;
+    background-color: #fff;
+    border-top: 1px solid #ccc;
+    z-index: 100;
+}
+
+
+#user-input {
+    flex-grow: 1;
+    padding: 10px;
+    font-size: 1rem;
+    border-radius: 20px;
+    border: 1px solid #ccc;
+}
+
+#send-btn {
+    margin-left: 10px;
+    padding: 10px 20px;
+    font-size: 1rem;
+    background-color: #007B7F;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+}
+
+.typing-indicator {
+    font-style: italic;
+    color: #666;
+    padding: 0 20px;
+    margin-top: 10px;
+    animation: blink 1.5s infinite;
+}
+
+.typing-indicator span {
+    animation: blink 1s infinite;
+}
+
+.typing-indicator.hidden {
+    display: none;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 1; }
+}
+
+body.dark {
+    background-color: #121212;
+    color: #000;
+}
+
+body.dark footer {
+    background-color: #222;
+}
+
+body.dark #user-input {
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+}
+
+body.dark .bubble {
+    background-color: #004d4d;
+    color: white;
+}

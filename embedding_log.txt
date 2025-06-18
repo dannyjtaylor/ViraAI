@@ -1,0 +1,6 @@
+✅ Embedded: test.docx
+✅ Embedded: test.pdf
+✅ Embedded: test.pptx
+✅ Embedded: test.txt
+❌ Failed: ~$test.docx — Package not found at 'C:\Users\dtaylor\Documents\GitHub\DT_City_WH_Technology_Services\CityAI\WinterHavenAIAssistant\data\~$test.docx'
+❌ Failed: ~$test.pptx — Package not found at 'C:\Users\dtaylor\Documents\GitHub\DT_City_WH_Technology_Services\CityAI\WinterHavenAIAssistant\data\~$test.pptx'

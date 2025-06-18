@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Vira – Winter Haven AI Assistant</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <link rel="icon" href="/static/whico.ico" type="image/x-icon">
+</head>
+<body>
+    <header>
+        <a href="https://www.mywinterhaven.com" target="_blank" rel="noopener noreferrer">
+          <img src="/static/WHlogo.png" alt="Winter Haven Logo" class="logo">
+        </a>
+        <h1>Vira – Your Personal Assistant from the City of Winter Haven</h1>
+        <button id="theme-toggle">🌙</button>
+    </header>
+
+    <main id="chat-container">
+        <div class="message vira first-message">
+            <div class="bubble">Hello! I'm <strong>Vira</strong>. How can I help you today?</div>
+            <div class="timestamp"></div>
+        </div>
+    </main>
+
+    <div id="typing-indicator" class="typing-indicator hidden">Vira is typing<span>.</span><span>.</span><span>.</span></div>
+
+    <footer>
+        <input type="text" id="user-input" placeholder="Type your message here..." autocomplete="off" />
+        <button id="send-btn">Send</button>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
