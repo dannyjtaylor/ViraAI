@@ -1,8 +1,12 @@
 @echo off
 cd /d "%~dp0"
 
-REM Start FastAPI server using uvicorn
-start "" /B cmd /C "python main.py > server.log 2>&1"
+:: Optional: activate virtual environment if you have one
+:: call venv\Scripts\activate
 
-REM Open browser tab after delay
-start launch_browser.vbs
+:: Launch the browser in the background
+start "" launch_browser.vbs
+
+:: Start the FastAPI server
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8080
+pause

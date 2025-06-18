@@ -1,10 +1,11 @@
-
 import os
 import json
+import logging
 from fastapi import FastAPI, Request, UploadFile, File, Form
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from openai import OpenAI
 import chromadb
@@ -12,28 +13,50 @@ import pdfplumber
 from docx import Document
 from pptx import Presentation
 from langchain.text_splitter import RecursiveCharacterTextSplitter
+import uvicorn
 
 # Load environment variables
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=api_key)
 
-# Initialize Chroma vector store
-chroma_client = chromadb.Client()
-collection = chroma_client.get_or_create_collection(name="city_docs")
+# Initialize FastAPI app
+app = FastAPI()
 
-# File and embedding settings
+# Logging setup
+logging.basicConfig(level=logging.INFO)
+
+# CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Request logging
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    logger = logging.getLogger("uvicorn.access")
+    logger.info(f"{request.method} {request.url}")
+    response = await call_next(request)
+    return response
+
+# File and embed config
 SUPPORTED_EXTENSIONS = [".txt", ".docx", ".pptx", ".pdf"]
 CACHE_FILE = "embed_cache.json"
 LOG_FILE = "embedding_log.txt"
 DATA_DIR = "data"
 
-# FastAPI app
-app = FastAPI()
+# Setup vector store
+chroma_client = chromadb.Client()
+collection = chroma_client.get_or_create_collection(name="city_docs")
+
+# Static and templates
 templates = Jinja2Templates(directory="templates")
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-# Load and save embedding cache
+# Helpers
 def load_cache():
     if os.path.exists(CACHE_FILE):
         with open(CACHE_FILE, "r") as f:
@@ -44,14 +67,12 @@ def save_cache(cache):
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f)
 
-# Text extraction logic
 def extract_text(file_path, ext):
     if ext == ".txt":
         with open(file_path, "r", encoding="utf-8") as f:
             return f.read()
     elif ext == ".docx":
-        doc = Document(file_path)
-        return "\n".join([p.text for p in doc.paragraphs])
+        return "\n".join(p.text for p in Document(file_path).paragraphs)
     elif ext == ".pptx":
         prs = Presentation(file_path)
         return "\n".join(shape.text for slide in prs.slides for shape in slide.shapes if hasattr(shape, "text"))
@@ -60,7 +81,6 @@ def extract_text(file_path, ext):
             return "\n".join(page.extract_text() or "" for page in pdf.pages)
     return ""
 
-# Embedding logic
 def split_and_embed_text(full_text, filename):
     splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=100)
     docs = splitter.create_documents([full_text])
@@ -78,7 +98,6 @@ def split_and_embed_text(full_text, filename):
 def embed_documents(folder_path):
     cache = load_cache()
     os.makedirs(folder_path, exist_ok=True)
-
     with open(LOG_FILE, "w", encoding="utf-8") as log:
         for filename in os.listdir(folder_path):
             path = os.path.join(folder_path, filename)
@@ -104,6 +123,7 @@ async def home(request: Request):
 
 @app.post("/ask")
 async def ask_question(request: Request, question: str = Form(...)):
+    logging.info(f"POST /ask — Question: {question}")
     query_embedding = client.embeddings.create(
         model="text-embedding-3-small",
         input=question
@@ -121,6 +141,7 @@ async def ask_question(request: Request, question: str = Form(...)):
 
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
+    logging.info(f"POST /upload — File: {file.filename}")
     contents = await file.read()
     os.makedirs(DATA_DIR, exist_ok=True)
     file_path = os.path.join(DATA_DIR, file.filename)
@@ -131,8 +152,13 @@ async def upload_file(file: UploadFile = File(...)):
 
 @app.get("/logs", response_class=HTMLResponse)
 async def show_logs(request: Request):
+    logging.info("GET /logs")
     logs = ""
     if os.path.exists(LOG_FILE):
         with open(LOG_FILE, "r", encoding="utf-8") as f:
             logs = f.read()
     return templates.TemplateResponse("logs.html", {"request": request, "logs": logs})
+
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8080))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)

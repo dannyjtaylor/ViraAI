@@ -22,13 +22,12 @@ function formatTime() {
     return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
 
-function appendMessage(content, sender) {
+function appendMessage(content, sender, animate = false) {
     const message = document.createElement("div");
     message.classList.add("message", sender);
 
     const bubble = document.createElement("div");
     bubble.classList.add("bubble");
-    bubble.innerHTML = content;
 
     const time = document.createElement("div");
     time.classList.add("timestamp");
@@ -38,7 +37,29 @@ function appendMessage(content, sender) {
     message.appendChild(time);
     chatContainer.appendChild(message);
     chatContainer.scrollTop = chatContainer.scrollHeight;
+
+    if (animate && sender === "vira") {
+        // Animate the full HTML content (including tags)
+        let index = 0;
+        const typingSpeed = 10;
+        const interval = setInterval(() => {
+            bubble.innerHTML = content.slice(0, index) + "<span class='cursor'>|</span>";
+            index++;
+            if (index > content.length) {
+                clearInterval(interval);
+                bubble.innerHTML = content; // Final render without cursor
+            }
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }, typingSpeed);
+    } else {
+        if (sender === "vira") {
+            bubble.innerHTML = content; // Allow HTML
+        } else {
+            bubble.textContent = content; // Plain text for user input
+        }
+    }
 }
+
 
 function showTyping() {
     typingIndicator.classList.remove("hidden");
@@ -64,7 +85,7 @@ function sendMessage() {
     .then(res => res.json())
     .then(data => {
         hideTyping();
-        appendMessage(data.response, "vira");
+        appendMessage(data.response, "vira", true);  // true = animate
     })
     .catch(err => {
         hideTyping();
@@ -72,3 +93,4 @@ function sendMessage() {
         console.error(err);
     });
 }
+

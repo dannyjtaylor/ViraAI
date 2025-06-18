@@ -33,13 +33,12 @@ header {
 
 main {
     padding: 20px;
-    padding-bottom: 100px; /* NEW */
+    padding-bottom: 100px;
     height: calc(100vh - 100px);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
 }
-
 
 .message {
     margin: 10px 0;
@@ -94,7 +93,6 @@ footer {
     z-index: 100;
 }
 
-
 #user-input {
     flex-grow: 1;
     padding: 10px;
@@ -123,16 +121,25 @@ footer {
 }
 
 .typing-indicator span {
-    animation: blink 1s infinite;
+    display: inline-block;
+    animation: bounce 1s infinite ease-in-out;
+    margin-left: 2px;
+}
+
+.typing-indicator span:nth-child(2) {
+    animation-delay: 0.1s;
+}
+.typing-indicator span:nth-child(3) {
+    animation-delay: 0.2s;
 }
 
 .typing-indicator.hidden {
     display: none;
 }
 
-@keyframes blink {
-    0%, 100% { opacity: 0.2; }
-    50% { opacity: 1; }
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
 }
 
 body.dark {
@@ -153,4 +160,54 @@ body.dark #user-input {
 body.dark .bubble {
     background-color: #004d4d;
     color: white;
+}
+
+.cursor {
+    display: inline-block;
+    width: 10px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+.typing-indicator {
+    font-style: italic;
+    color: #666;
+    padding: 0 20px;
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.typing-indicator.hidden {
+    display: none;
+}
+
+.typing-indicator .dot {
+    animation: bounce 1.4s infinite;
+    font-weight: bold;
+    display: inline-block;
+    margin-left: 2px;
+}
+
+.typing-indicator .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+.typing-indicator .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+.typing-indicator .dot:nth-child(4) {
+    animation-delay: 0.6s;
+}
+
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-4px);
+    }
 }
