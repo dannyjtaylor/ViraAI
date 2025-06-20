@@ -186,6 +186,7 @@ async def ask(request: Request):
     content = content.replace("\n", "<br><br>")
     content = f"<strong>Vira:</strong> {content}"
 
+
     if first_message:
         hour = now.hour
         greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
