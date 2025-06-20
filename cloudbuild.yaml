@@ -1,4 +1,6 @@
-logsBucket: 'gs://cloud-build-logs-$PROJECT_ID'
+options:
+  logging: CLOUD_LOGGING_ONLY
+
 
 steps:
   # Step 1: Build Docker image
