@@ -1,4 +1,4 @@
-# Use a base image with Python
+# Use an official Python runtime as base
 FROM python:3.10-slim
 
 # Set working directory
@@ -8,11 +8,11 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy rest of the app
+# Copy your app files
 COPY . .
 
-# Expose the correct port
+# Expose port 8080 for Cloud Run
 EXPOSE 8080
 
-# Set the startup command
-CMD ["python", "main.py"]
+# Run the app
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
