@@ -1,30 +1,29 @@
 import os
-import json
-import logging
-from fastapi import FastAPI, Request, UploadFile, File, Form
+import re
+from datetime import datetime
+from pathlib import Path
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.middleware.cors import CORSMiddleware
-from dotenv import load_dotenv
 from openai import OpenAI
-import chromadb
-import pdfplumber
+from dotenv import load_dotenv
+import sqlite3
 from docx import Document
 from pptx import Presentation
+import fitz  # PyMuPDF
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-import uvicorn
+import chromadb
 
-# Load environment variables
+# Load environment
 load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-client = OpenAI(api_key=api_key)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Initialize FastAPI app
 app = FastAPI()
 
-# Logging setup
-logging.basicConfig(level=logging.INFO)
+# Mount folders
+app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/forms", StaticFiles(directory="data/forms"), name="forms")
 
 # CORS middleware
 app.add_middleware(
@@ -34,131 +33,143 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Request logging
-@app.middleware("http")
-async def log_requests(request: Request, call_next):
-    logger = logging.getLogger("uvicorn.access")
-    logger.info(f"{request.method} {request.url}")
-    response = await call_next(request)
-    return response
+# SQLite DB
+conn = sqlite3.connect("chat_history.db", check_same_thread=False)
+cursor = conn.cursor()
+cursor.execute("""
+    CREATE TABLE IF NOT EXISTS chats (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        timestamp TEXT,
+        user_query TEXT,
+        vira_response TEXT
+    )
+""")
+conn.commit()
 
-# File and embed config
-SUPPORTED_EXTENSIONS = [".txt", ".docx", ".pptx", ".pdf"]
-CACHE_FILE = "embed_cache.json"
-LOG_FILE = "embedding_log.txt"
-DATA_DIR = "data"
+# File extractors
+def extract_text(file_path):
+    ext = file_path.suffix.lower()
+    try:
+        if ext == ".pdf":
+            return "\n".join(page.get_text() for page in fitz.open(file_path))
+        elif ext in [".doc", ".docx"]:
+            return "\n".join(p.text for p in Document(file_path).paragraphs)
+        elif ext == ".pptx":
+            prs = Presentation(file_path)
+            return "\n".join(shape.text for slide in prs.slides for shape in slide.shapes if hasattr(shape, "text"))
+        elif ext == ".txt":
+            return file_path.read_text(encoding="utf-8")
+    except Exception as e:
+        print(f"[ERROR] Failed reading {file_path.name}: {e}")
+    return ""
 
-# Setup vector store
+# Embedding
 chroma_client = chromadb.Client()
 collection = chroma_client.get_or_create_collection(name="city_docs")
 
-# Static and templates
-templates = Jinja2Templates(directory="templates")
-app.mount("/static", StaticFiles(directory="static"), name="static")
+def load_documents():
+    splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+    for i, file_path in enumerate(Path("data").rglob("*.*")):
+        if file_path.suffix.lower() not in [".pdf", ".doc", ".docx", ".pptx", ".txt"]:
+            continue
+        try:
+            text = extract_text(file_path)
+            if text.strip():
+                chunks = splitter.create_documents([text])
+                for j, chunk in enumerate(chunks):
+                    embedding = client.embeddings.create(
+                        model="text-embedding-3-small",
+                        input=chunk.page_content
+                    ).data[0].embedding
+                    collection.add(
+                        documents=[chunk.page_content],
+                        embeddings=[embedding],
+                        ids=[f"{file_path.name}_{i}_{j}"]
+                    )
+        except Exception as e:
+            print(f"[ERROR] Embedding failed for {file_path.name}: {e}")
 
-# Helpers
-def load_cache():
-    if os.path.exists(CACHE_FILE):
-        with open(CACHE_FILE, "r") as f:
-            return json.load(f)
-    return {}
+load_documents()
 
-def save_cache(cache):
-    with open(CACHE_FILE, "w") as f:
-        json.dump(cache, f)
-
-def extract_text(file_path, ext):
-    if ext == ".txt":
-        with open(file_path, "r", encoding="utf-8") as f:
-            return f.read()
-    elif ext == ".docx":
-        return "\n".join(p.text for p in Document(file_path).paragraphs)
-    elif ext == ".pptx":
-        prs = Presentation(file_path)
-        return "\n".join(shape.text for slide in prs.slides for shape in slide.shapes if hasattr(shape, "text"))
-    elif ext == ".pdf":
-        with pdfplumber.open(file_path) as pdf:
-            return "\n".join(page.extract_text() or "" for page in pdf.pages)
-    return ""
-
-def split_and_embed_text(full_text, filename):
-    splitter = RecursiveCharacterTextSplitter(chunk_size=300, chunk_overlap=100)
-    docs = splitter.create_documents([full_text])
-    for i, doc in enumerate(docs):
-        embedding = client.embeddings.create(
-            model="text-embedding-3-small",
-            input=doc.page_content
-        ).data[0].embedding
-        collection.add(
-            documents=[f"{filename}\n\n{doc.page_content}"],
-            embeddings=[embedding],
-            ids=[f"{filename}_chunk_{i}"]
-        )
-
-def embed_documents(folder_path):
-    cache = load_cache()
-    os.makedirs(folder_path, exist_ok=True)
-    with open(LOG_FILE, "w", encoding="utf-8") as log:
-        for filename in os.listdir(folder_path):
-            path = os.path.join(folder_path, filename)
-            ext = os.path.splitext(filename)[1].lower()
-            if ext not in SUPPORTED_EXTENSIONS:
-                continue
-            mtime = os.path.getmtime(path)
-            if filename in cache and cache[filename] == mtime:
-                continue
-            try:
-                text = extract_text(path, ext)
-                split_and_embed_text(text, filename)
-                cache[filename] = mtime
-                log.write(f"✅ Embedded: {filename}\n")
-            except Exception as e:
-                log.write(f"❌ Failed: {filename} — {e}\n")
-    save_cache(cache)
-
-# Routes
+# Serve home page
 @app.get("/", response_class=HTMLResponse)
-async def home(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+async def root():
+    return Path("static/index.html").read_text(encoding="utf-8")
+
+short_responses = {"yes", "no", "maybe", "ok", "sure", "nah", "yep", "nope", "y", "n", "why", "when", "how", "what", "and"}
+
+def is_meaningful(query, recent_responses):
+    if not query.strip() or query.lower() in short_responses:
+        return any(msg.strip().endswith("?") for msg in recent_responses)
+    return len(query) >= 10 and len(re.findall(r"\b\w+\b", query)) >= 3
 
 @app.post("/ask")
-async def ask_question(request: Request, question: str = Form(...)):
-    logging.info(f"POST /ask — Question: {question}")
-    query_embedding = client.embeddings.create(
-        model="text-embedding-3-small",
-        input=question
-    ).data[0].embedding
-    results = collection.query(query_embeddings=[query_embedding], n_results=10)
-    context = "\n".join(results["documents"][0])
-    response = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[
-            {"role": "system", "content": "You are a helpful assistant who only uses the provided context."},
-            {"role": "user", "content": f"Use this info to answer:\n\n{context}\n\nQuestion: {question}"}
-        ]
+async def ask(request: Request):
+    data = await request.json()
+    query = data.get("query", "").strip()
+    first_message = data.get("firstMessage", False)
+
+    # Form download handler
+    if query.lower().startswith("download form"):
+        name = query.lower().replace("download form", "").strip()
+        for f in Path("data/forms").glob("*.*"):
+            if name in f.name.lower():
+                return {
+                    "response": f"You can download the form here: <a href='/forms/{f.name}' class='download-button' target='_blank'>{f.name}</a>",
+                    "time": datetime.now().strftime("%I:%M %p")
+                }
+
+    cursor.execute("SELECT vira_response FROM chats ORDER BY id DESC LIMIT 3")
+    recent = [r[0] for r in cursor.fetchall()]
+
+    context = ""
+    if is_meaningful(query, recent):
+        try:
+            query_embedding = client.embeddings.create(
+                model="text-embedding-3-small",
+                input=query
+            ).data[0].embedding
+            results = collection.query(query_embeddings=[query_embedding], n_results=3)
+            context = "\n".join(results["documents"][0])
+        except Exception as e:
+            print(f"[ERROR] Context retrieval failed: {e}")
+
+    now = datetime.now()
+    system_prompt = (
+        f"You are Vira, a helpful assistant for the City of Winter Haven. "
+        f"Today is {now.strftime('%A, %B %d, %Y')}. Keep answers concise and friendly. "
+        f"Do not make up information, only use the provided context."
     )
-    return {"answer": response.choices[0].message.content}
 
-@app.post("/upload")
-async def upload_file(file: UploadFile = File(...)):
-    logging.info(f"POST /upload — File: {file.filename}")
-    contents = await file.read()
-    os.makedirs(DATA_DIR, exist_ok=True)
-    file_path = os.path.join(DATA_DIR, file.filename)
-    with open(file_path, "wb") as f:
-        f.write(contents)
-    embed_documents(DATA_DIR)
-    return {"status": "success", "filename": file.filename}
+    messages = [{"role": "system", "content": system_prompt}]
+    if context:
+        messages.append({"role": "user", "content": f"Use this context:\n{context}"})
+    messages.append({"role": "user", "content": query})
 
-@app.get("/logs", response_class=HTMLResponse)
-async def show_logs(request: Request):
-    logging.info("GET /logs")
-    logs = ""
-    if os.path.exists(LOG_FILE):
-        with open(LOG_FILE, "r", encoding="utf-8") as f:
-            logs = f.read()
-    return templates.TemplateResponse("logs.html", {"request": request, "logs": logs})
+    ai_response = client.chat.completions.create(
+        model="gpt-4o",
+        messages=messages
+    ).choices[0].message.content.strip()
+
+    if ai_response.lower().startswith("vira:"):
+        ai_response = ai_response[len("vira:"):].strip()
+
+    ai_response = re.sub(r"\*\*(.*?)\*\*", r"<strong>\1</strong>", ai_response)
+    ai_response = ai_response.replace("\n", "<br><br>")
+    ai_response = f"<strong>Vira:</strong> {ai_response}"
+
+    if first_message:
+        greeting = "Good morning" if now.hour < 12 else "Good afternoon" if now.hour < 18 else "Good evening"
+        ai_response = f"<strong>Vira:</strong> {greeting}! {ai_response[len('<strong>Vira:</strong> '):]}"
+
+    timestamp = now.strftime("%I:%M %p")
+    cursor.execute("INSERT INTO chats (timestamp, user_query, vira_response) VALUES (?, ?, ?)",
+                   (timestamp, query, ai_response))
+    conn.commit()
+
+    return {"response": ai_response, "time": timestamp}
 
 if __name__ == "__main__":
+    import uvicorn
     port = int(os.environ.get("PORT", 8080))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=port)
