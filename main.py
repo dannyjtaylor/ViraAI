@@ -5,6 +5,8 @@ from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
+from fastapi import UploadFile, File
+import requests
 from fastapi.middleware.cors import CORSMiddleware
 from openai import OpenAI
 from dotenv import load_dotenv
@@ -137,9 +139,12 @@ async def ask(request: Request):
     now = datetime.now()
     system_prompt = (
         f"You are Vira, a helpful assistant for the City of Winter Haven. "
-        f"Today is {now.strftime('%A, %B %d, %Y')}. Keep answers concise and friendly. "
-        f"Do not make up information, only use the provided context."
+        f"Today is {now.strftime('%A, %B %d, %Y')} and the current time is {now.strftime('%I:%M %p')}. "
+        f"Keep answers concise and friendly. "
+        f"Keep your response related only to information about Winter Haven and the documents you are provided. "
+        f"Limit your response to 150 words or less. Remember previous conversations and use them to inform your responses and ask clarifying questions if needed."
     )
+
 
     messages = [{"role": "system", "content": system_prompt}]
     if context:
@@ -168,6 +173,25 @@ async def ask(request: Request):
     conn.commit()
 
     return {"response": ai_response, "time": timestamp}
+
+@app.post("/transcribe")
+async def transcribe_audio(audio: UploadFile = File(...)):
+    try:
+        audio_data = await audio.read()
+        response = requests.post(
+            "https://api.openai.com/v1/audio/transcriptions",
+            headers={
+                "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}"
+            },
+            files={
+                "file": (audio.filename, audio_data, audio.content_type),
+                "model": (None, "whisper-1")
+            }
+        )
+        result = response.json()
+        return {"transcript": result.get("text", "")}
+    except Exception as e:
+        return {"error": str(e)}
 
 if __name__ == "__main__":
     import uvicorn

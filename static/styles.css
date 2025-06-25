@@ -13,7 +13,8 @@ header {
     display: flex;
     align-items: center;
     padding: 10px 20px;
-    position: relative;
+    justify-content: space-between;
+    flex-wrap: wrap;
 }
 
 .logo {
@@ -21,20 +22,25 @@ header {
     margin-right: 15px;
 }
 
-#theme-toggle {
-    position: absolute;
-    right: 20px;
-    background: none;
-    border: none;
+.header-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+#theme-toggle,
+#reset-btn {
+    background-color: #004c4f;
     color: white;
-    font-size: 1.2rem;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
     cursor: pointer;
+    font-size: 0.95rem;
 }
 
 main {
     padding: 20px;
     padding-bottom: 100px;
-    height: calc(100vh - 100px);
     overflow-y: auto;
     display: flex;
     flex-direction: column;
@@ -101,7 +107,8 @@ footer {
     border: 1px solid #ccc;
 }
 
-#send-btn {
+#send-btn,
+#mic-btn {
     margin-left: 10px;
     padding: 10px 20px;
     font-size: 1rem;
@@ -110,67 +117,6 @@ footer {
     border: none;
     border-radius: 20px;
     cursor: pointer;
-}
-
-.typing-indicator {
-    font-style: italic;
-    color: #666;
-    padding: 0 20px;
-    margin-top: 10px;
-    animation: blink 1.5s infinite;
-}
-
-.typing-indicator span {
-    display: inline-block;
-    animation: bounce 1s infinite ease-in-out;
-    margin-left: 2px;
-}
-
-.typing-indicator span:nth-child(2) {
-    animation-delay: 0.1s;
-}
-.typing-indicator span:nth-child(3) {
-    animation-delay: 0.2s;
-}
-
-.typing-indicator.hidden {
-    display: none;
-}
-
-@keyframes bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-5px); }
-}
-
-body.dark {
-    background-color: #121212;
-    color: #000;
-}
-
-body.dark footer {
-    background-color: #222;
-}
-
-body.dark #user-input {
-    background-color: #333;
-    color: white;
-    border: 1px solid #555;
-}
-
-body.dark .bubble {
-    background-color: #004d4d;
-    color: white;
-}
-
-.cursor {
-    display: inline-block;
-    width: 10px;
-    animation: blink 1s infinite;
-}
-
-@keyframes blink {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 1; }
 }
 
 .typing-indicator {
@@ -210,4 +156,98 @@ body.dark .bubble {
     50% {
         transform: translateY(-4px);
     }
+}
+
+body.dark {
+    background-color: #121212;
+    color: #000;
+}
+
+body.dark footer {
+    background-color: #222;
+}
+
+body.dark #user-input {
+    background-color: #333;
+    color: white;
+    border: 1px solid #555;
+}
+
+body.dark .bubble {
+    background-color: #004d4d;
+    color: white;
+}
+
+.cursor {
+    display: inline-block;
+    width: 10px;
+    animation: blink 1s infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 1; }
+}
+
+/* Department Tabs */
+.department-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    background-color: #e0f7fa;
+    border-bottom: 2px solid #007B7F;
+    padding: 8px 0;
+    z-index: 99;
+}
+
+.tab {
+    background: none;
+    border: none;
+    padding: 10px 20px;
+    margin: 2px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.3s, color 0.3s;
+}
+
+.tab:hover {
+    background-color: #b2dfdb;
+}
+
+.tab.active {
+    background-color: #007B7F;
+    color: white;
+    font-weight: bold;
+}
+
+/* Subtabs */
+.subtab-group {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin: 10px 0;
+    gap: 8px;
+}
+
+.subtab {
+    padding: 8px 16px;
+    background-color: #007B7F;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.subtab:hover {
+    background-color: #005e63;
+}
+
+.subtab.active {
+    background-color: #004c4f;
+}
+
+.subtab-group.hidden {
+    display: none;
 }

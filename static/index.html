@@ -1,37 +1,103 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Vira – Winter Haven AI Assistant</title>
-    <link rel="stylesheet" href="/static/styles.css">
-    <link rel="icon" href="/static/whico.ico" type="image/x-icon">
+  <meta charset="UTF-8" />
+  <title>Vira – Winter Haven AI Assistant</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+  <link rel="icon" href="/static/whico.ico" type="image/x-icon" />
 </head>
 <body>
-    <header>
-        <a href="https://www.mywinterhaven.com" target="_blank" rel="noopener noreferrer">
-            <img src="/static/WHlogo.png" alt="Winter Haven Logo" class="logo">
-        </a>
-        <h1>Vira – Your Personal Assistant from the City of Winter Haven</h1>
-        <button id="theme-toggle">🌙</button>
-    </header>
+  <header>
+    <a href="https://www.mywinterhaven.com" target="_blank" rel="noopener noreferrer">
+      <img src="/static/WHlogo.png" alt="Winter Haven Logo" class="logo" />
+    </a>
+    <h1>Vira – Your Personal Assistant from the City of Winter Haven</h1>
+    <div class="header-buttons">
+      <button id="theme-toggle">🌙</button>
+      <button id="reset-btn">⟳ Reset</button>
+    </div>
+  </header>
 
-    <main id="chat-container">
-        <div class="message vira first-message">
-            <div class="bubble">Hello! I'm <strong>Vira</strong>. How can I help you today?</div>
-            <div class="timestamp"></div>
-        </div>
-    </main>
+  <!-- Department Tabs -->
+  <nav class="department-tabs">
+    <button class="tab" onclick="selectDepartment('tech')">Technology Services</button>
+    <button class="tab" onclick="selectDepartment('hr')">Human Resources</button>
+    <button class="tab" onclick="selectDepartment('finance')">Finance</button>
+    <button class="tab" onclick="selectDepartment('water')">Water Department</button>
+    <button class="tab" onclick="selectDepartment('pw')">Public Works</button>
+    <button class="tab" onclick="selectDepartment('eoc')">EOC</button>
+    <button class="tab" onclick="selectDepartment('cmo')">City Manager's Office</button>
+    <button class="tab" onclick="selectDepartment('airport')">Airport</button>
+    <button class="tab" onclick="selectDepartment('parks')">Parks & Recreation</button>
+    <button class="tab" onclick="selectDepartment('police')">Police Department</button>
+    <button class="tab" onclick="selectDepartment('fire')">Fire Department</button>
+  </nav>
 
-    <div id="typing-indicator" class="typing-indicator hidden">
+  <!-- Subtabs -->
+  <div id="subtabs-container">
+    <div id="tech" class="subtab-group hidden">
+      <button class="subtab">Hiep Nyguyen – Smart City Officer</button>
+      <button class="subtab">Danny Taylor – Smart City Student Intern</button>
+    </div>
+    <div id="hr" class="subtab-group hidden">
+      <button class="subtab">Shawn Dykes - Director</button>
+      <button class="subtab">Canise Hubbard – Assistant Director</button>
+    </div>
+    <div id="finance" class="subtab-group hidden">
+      <button class="subtab">Anna Harp, Account Clerk II</button>
+      <button class="subtab">Allen Weeks - Budget & Management Officer</button>
+    </div>
+    <div id="water" class="subtab-group hidden">
+      <button class="subtab">Garry Hubbard, Director</button>
+      <button class="subtab">Mark Bombard, Assistant Director</button>
+    </div>
+    <div id="pw" class="subtab-group hidden">
+      <button class="subtab">Todd Gooding, Assistant Director</button>
+      <button class="subtab">Sandra Lambert, Administrative Support Specialist</button>
+    </div>
+    <div id="eoc" class="subtab-group hidden">
+      <button class="subtab">Eric Labbe, Department Director</button>
+      <button class="subtab">Cedric Cox, Assistant Department Director</button>
+    </div>
+    <div id="cmo" class="subtab-group hidden">
+      <button class="subtab">T. Michael Stavres, City Manager</button>
+      <button class="subtab">Michael “M.J.” Carnevale, Deputy City Manager</button>
+    </div>
+    <div id="airport" class="subtab-group hidden">
+      <button class="subtab">Troy Heidel, Airport Director</button>
+      <button class="subtab">Collin Davis, Airport Operations Supervisor</button>
+    </div>
+    <div id="parks" class="subtab-group hidden">
+      <button class="subtab">Andy Palmer: Parks Planning & Strategic Initiatives Manager</button>
+      <button class="subtab">David Saltman: Tennis Pro</button>
+    </div>
+    <div id="police" class="subtab-group hidden">
+      <button class="subtab">Vance Monroe, Police Chief</button>
+      <button class="subtab">Clarissa Ramirez, CSI</button>
+    </div>
+    <div id="fire" class="subtab-group hidden">
+      <button class="subtab">Michael Stroud, EMS Coordinator</button>
+      <button class="subtab">Drew Neubrand, Fire Chief</button>
+    </div>
+  </div>
+
+  <main id="chat-container">
+    <div class="message vira first-message">
+      <div class="bubble">Hello! I'm <strong>Vira</strong>. How can I help you today?</div>
+      <div class="timestamp"></div>
+    </div>
+  </main>
+
+  <div id="typing-indicator" class="typing-indicator hidden">
     Vira is thinking<span class="dot">.</span><span class="dot">.</span><span class="dot">.</span>
-</div>
+  </div>
 
+  <footer>
+    <input type="text" id="user-input" placeholder="Ask anything" autocomplete="off" />
+    <button id="mic-btn">🎙️</button>
+    <button id="send-btn">Send ➲</button>
+  </footer>
 
-    <footer>
-        <input type="text" id="user-input" placeholder="Ask anything" autocomplete="off" />
-        <button id="send-btn">Send ➲</button>
-    </footer>
-
-    <script src="/static/app.js" defer></script>
+  <script src="/static/app.js" defer></script>
 </body>
 </html>
